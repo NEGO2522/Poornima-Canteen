@@ -4,16 +4,15 @@ import { auth } from '../firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { toast } from 'react-toastify';
 
+// Razorpay configuration
+const RAZORPAY_KEY_ID = 'rzp_test_HrJZAo99ILDoXv';
+const RAZORPAY_KEY_SECRET = 'F80QkmyiXwDokGxUDBYQhTRs';
+
 const Cart = ({ cart, setCart }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isCheckout, setIsCheckout] = useState(false);
-  const [deliveryDetails, setDeliveryDetails] = useState({
-    name: '',
-    phone: '',
-    address: '',
-    specialInstructions: ''
-  });
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -21,11 +20,7 @@ const Cart = ({ cart, setCart }) => {
         navigate('/login');
       } else {
         setUser(currentUser);
-        // Pre-fill name if available
-        setDeliveryDetails(prev => ({
-          ...prev,
-          name: currentUser.displayName || ''
-        }));
+        // User is logged in, proceed
       }
     });
 
@@ -55,31 +50,92 @@ const Cart = ({ cart, setCart }) => {
     }, 0);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setDeliveryDetails(prev => ({
-      ...prev,
-      [name]: value
-    }));
+
+
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => {
+        resolve(true);
+      };
+      script.onerror = () => {
+        resolve(false);
+      };
+      document.body.appendChild(script);
+    });
+  };
+
+  const displayRazorpay = async () => {
+    const res = await loadRazorpay();
+    
+    if (!res) {
+      toast.error('Razorpay SDK failed to load. Are you online?');
+      return;
+    }
+
+    const amount = calculateTotal() * 100; // Razorpay uses paise as the smallest unit
+    
+    const options = {
+      key: RAZORPAY_KEY_ID,
+      amount: amount.toString(),
+      currency: 'INR',
+      name: 'Poornima Canteen',
+      description: 'Payment for your order',
+      image: 'https://example.com/your_logo.png',
+      handler: function (response) {
+        handleSuccessfulPayment(response);
+      },
+      prefill: {
+        name: user?.displayName || 'Customer',
+        email: user?.email || '',
+        contact: '9999999999' // Default contact number
+      },
+      theme: {
+        color: '#F59E0B'
+      },
+      modal: {
+        ondismiss: function() {
+          console.log('Payment closed');
+        }
+      }
+    };
+
+    try {
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+    } catch (error) {
+      console.error('Error initializing Razorpay:', error);
+      toast.error('Failed to initialize payment. Please try again.');
+    }
+  };
+
+  const handleSuccessfulPayment = (paymentResponse) => {
+    try {
+      console.log('Order Placed:', {
+        userId: user?.uid,
+        items: cart,
+        total: calculateTotal(),
+        paymentId: paymentResponse.razorpay_payment_id,
+        orderId: paymentResponse.razorpay_order_id,
+        signature: paymentResponse.razorpay_signature
+      });
+      
+      setCart([]);
+      localStorage.removeItem('canteenCart');
+      
+      toast.success('Order placed successfully! Payment ID: ' + paymentResponse.razorpay_payment_id);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error processing payment:', error);
+      toast.error('Error processing your payment. Please contact support.');
+    }
   };
 
   const handleCheckout = () => {
-    // Process the order
-    console.log('Order Placed:', {
-      userId: user?.uid,
-      items: cart,
-      total: calculateTotal()
-    });
-    
-    // Clear cart
-    setCart([]);
-    localStorage.removeItem('canteenCart');
-    
-    // Show success message
-    toast.success('Order placed successfully!');
-    
-    // Redirect to dashboard
-    navigate('/dashboard');
+    // Proceed directly to payment
+    displayRazorpay();
   };
 
   if (cart.length === 0) {
