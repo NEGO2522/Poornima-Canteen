@@ -107,11 +107,7 @@ const Cart = ({ cart, setCart }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 pt-24 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Your Order</h1>
-          <p className="mt-2 text-gray-600">Review and place your order</p>
-        </div>
-
+  
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
           <div className="px-6 py-5 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800">
@@ -121,23 +117,10 @@ const Cart = ({ cart, setCart }) => {
           <div className="divide-y divide-gray-200">
             {cart.map((item, index) => (
               <div key={index} className="p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 flex items-center">
-                    <div className="flex-shrink-0 h-20 w-20 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                      {item.imageUrl ? (
-                        <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <div className="h-full w-full bg-gray-100 flex items-center justify-center text-gray-400">
-                          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <div className="ml-4">
-                      <h4 className="font-medium text-gray-900">{item.name}</h4>
-                      <p className="text-yellow-600 font-medium">₹{item.price.toFixed(2)}</p>
-                    </div>
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{item.name}</h4>
+                    <p className="text-yellow-600 font-medium">₹{item.price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center border border-gray-300 rounded-md">
