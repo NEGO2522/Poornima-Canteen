@@ -5,6 +5,9 @@ import Login from './auth/Login';
 import Dashboard from './components/Dashboard';
 import Cart from './components/Cart';
 import TermsConditions from './components/Terms_Conditions';
+import CancellationRefundPolicy from './components/CancellationRefund_Policy';
+import Contact from './components/Contact';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import { auth } from './firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ToastContainer } from 'react-toastify';
@@ -66,6 +69,9 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/terms" element={<TermsConditions />} />
+          <Route path="/cancellation-refund-policy" element={<CancellationRefundPolicy />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           
           {/* Protected Routes */}
           <Route

@@ -243,8 +243,14 @@ const Dashboard = ({ cart, setCart }) => {
           </div>
         </div>
       </div>
-      <div className="text-center py-2 text-xs text-gray-500">
+      <div className="text-center py-2 text-xs text-gray-500 space-x-4">
         <Link to="/terms" className="hover:underline">Terms & Conditions</Link>
+        <span>•</span>
+        <Link to="/cancellation-refund-policy" className="hover:underline">Cancellation & Refund Policy</Link>
+        <span>•</span>
+        <Link to="/privacy-policy" className="hover:underline">Privacy Policy</Link>
+        <span>•</span>
+        <Link to="/contact" className="hover:underline">Contact Us</Link>
       </div>
     </div>
   );
