@@ -6,31 +6,22 @@ import { onAuthStateChanged } from 'firebase/auth';
 const Landing = () => {
   const navigate = useNavigate();
 
-  // Check if user is logged in
+  // Check if user is logged in and redirect to dashboard
   const checkAuthAndNavigate = (path) => {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        // User is signed in, navigate to the requested path
-        navigate(path);
+        // User is signed in, always navigate to dashboard
+        navigate('/dashboard');
       } else {
-        // User is not signed in, redirect to login
-        navigate('/login', { state: { from: path } });
+        // User is not signed in, redirect to login with intended path
+        navigate('/login', { state: { from: '/dashboard' } });
       }
     });
   };
 
-  // Handle button clicks
-  const handleButtonClick = (action) => {
-    switch(action) {
-      case 'order':
-        checkAuthAndNavigate('/order');
-        break;
-      case 'menu':
-        checkAuthAndNavigate('/menu');
-        break;
-      default:
-        break;
-    }
+  // Handle button click for menu
+  const handleMenuClick = () => {
+    checkAuthAndNavigate('/menu');
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
@@ -51,16 +42,10 @@ const Landing = () => {
           <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Where every meal is prepared with passion and served with a smile
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex justify-center">
             <button 
-              onClick={() => handleButtonClick('order')}
-              className="px-8 py-4 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-full transform transition-all duration-300 hover:scale-105"
-            >
-              Order Now
-            </button>
-            <button 
-              onClick={() => handleButtonClick('menu')}
-              className="px-8 py-4 border-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500/10 font-bold rounded-full transform transition-all duration-300 hover:scale-105"
+              onClick={handleMenuClick}
+              className="px-8 py-4 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-full transform transition-all duration-300 hover:scale-105 text-lg"
             >
               View Menu
             </button>
