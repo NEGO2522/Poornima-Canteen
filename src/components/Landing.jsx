@@ -19,9 +19,18 @@ const Landing = () => {
     });
   };
 
-  // Handle button click for menu
-  const handleMenuClick = () => {
-    checkAuthAndNavigate('/menu');
+  // Handle button clicks
+  const handleButtonClick = (action) => {
+    switch(action) {
+      case 'order':
+        checkAuthAndNavigate('/dashboard');
+        break;
+      case 'menu':
+        checkAuthAndNavigate('/menu');
+        break;
+      default:
+        break;
+    }
   };
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
@@ -42,10 +51,16 @@ const Landing = () => {
           <p className="text-xl md:text-2xl text-gray-300 mb-10 max-w-2xl mx-auto">
             Where every meal is prepared with passion and served with a smile
           </p>
-          <div className="flex justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
-              onClick={handleMenuClick}
-              className="px-8 py-4 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-full transform transition-all duration-300 hover:scale-105 text-lg"
+              onClick={() => handleButtonClick('order')}
+              className="px-8 py-4 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-full transform transition-all duration-300 hover:scale-105"
+            >
+              Order Now
+            </button>
+            <button 
+              onClick={() => handleButtonClick('menu')}
+              className="px-8 py-4 border-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500/10 font-bold rounded-full transform transition-all duration-300 hover:scale-105"
             >
               View Menu
             </button>
