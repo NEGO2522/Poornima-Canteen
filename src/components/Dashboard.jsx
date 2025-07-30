@@ -52,7 +52,7 @@ const Dashboard = ({ cart, setCart }) => {
     }
   };
 
-  const addToCart = (item) => {
+  const addToCart = (item, quantity = 1) => {
     // Check if item already exists in cart
     const existingItemIndex = cart.findIndex(cartItem => 
       cartItem.id === item.id && cartItem.name === item.name
@@ -63,15 +63,39 @@ const Dashboard = ({ cart, setCart }) => {
       const updatedCart = [...cart];
       updatedCart[existingItemIndex] = {
         ...updatedCart[existingItemIndex],
-        quantity: (updatedCart[existingItemIndex].quantity || 1) + 1
+        quantity: (updatedCart[existingItemIndex].quantity || 1) + quantity
       };
       setCart(updatedCart);
     } else {
-      // If item doesn't exist, add it with quantity 1
-      setCart([...cart, { ...item, quantity: 1 }]);
+      // If item doesn't exist, add it with the specified quantity (minimum 1)
+      setCart([...cart, { ...item, quantity: Math.max(1, quantity) }]);
     }
     
-    toast.success(`${item.name} added to cart`);
+    toast.success(`${quantity} ${item.name} added to cart`);
+  };
+
+  const updateCartQuantity = (item, newQuantity) => {
+    if (newQuantity < 1) return;
+    
+    const existingItemIndex = cart.findIndex(cartItem => 
+      cartItem.id === item.id && cartItem.name === item.name
+    );
+    
+    if (existingItemIndex >= 0) {
+      const updatedCart = [...cart];
+      updatedCart[existingItemIndex] = {
+        ...updatedCart[existingItemIndex],
+        quantity: newQuantity
+      };
+      setCart(updatedCart);
+    }
+  };
+  
+  const getItemQuantity = (item) => {
+    const cartItem = cart.find(cartItem => 
+      cartItem.id === item.id && cartItem.name === item.name
+    );
+    return cartItem ? cartItem.quantity : 0;
   };
 
   // Load menu items when active section changes
@@ -220,21 +244,49 @@ const Dashboard = ({ cart, setCart }) => {
                       key={item.id} 
                       className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow"
                     >
-                      <div className="flex justify-between items-start">
+                      <div className="flex justify-between items-center mb-2">
                         <h3 className="text-base font-medium text-gray-900">{item.name}</h3>
-                        <span className="bg-yellow-50 text-yellow-700 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                          {typeof item.price === 'number' ? `₹${item.price}` : item.price}
-                        </span>
+                        <span className="text-yellow-600 font-medium">₹{item.price?.toFixed(2)}</span>
                       </div>
-                      {item.description && (
-                        <p className="text-gray-500 text-sm mt-1.5">{item.description}</p>
-                      )}
-                      <button 
-                        onClick={() => addToCart(item)}
-                        className="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                      >
-                        Add to Cart
-                      </button>
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center border border-gray-300 rounded-md">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const currentQty = getItemQuantity(item);
+                              if (currentQty > 0) {
+                                updateCartQuantity(item, currentQty - 1);
+                              }
+                            }}
+                            className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-l-md transition-colors"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center font-medium">
+                            {getItemQuantity(item) || 0}
+                          </span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const currentQty = getItemQuantity(item);
+                              addToCart(item, currentQty + 1);
+                            }}
+                            className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-r-md transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const currentQty = getItemQuantity(item);
+                            addToCart(item, currentQty + 1);
+                          }}
+                          className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors whitespace-nowrap"
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
