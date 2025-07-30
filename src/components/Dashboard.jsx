@@ -101,7 +101,12 @@ const Dashboard = () => {
       <header className="bg-white shadow-sm fixed w-full z-10">
         <div className="max-w-7xl mx-auto px-8 sm:px-10 lg:px-12">
           <div className="flex justify-between h-24 items-center">
-            <h1 className="text-2xl font-bold text-yellow-600">Poornima Canteen</h1>
+            <h1 
+              className="text-2xl font-bold text-yellow-600 cursor-pointer hover:text-yellow-700 transition-colors"
+              onClick={() => navigate('/')}
+            >
+              Poornima Canteen
+            </h1>
             <div className="flex items-center space-x-4">
               <button 
                 onClick={() => navigate('/cart')}
