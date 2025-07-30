@@ -4,6 +4,7 @@ import Landing from './components/Landing';
 import Login from './auth/Login';
 import Dashboard from './components/Dashboard';
 import Cart from './components/Cart';
+import TermsConditions from './components/Terms_Conditions';
 import { auth } from './firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ToastContainer } from 'react-toastify';
@@ -64,6 +65,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/terms" element={<TermsConditions />} />
           
           {/* Protected Routes */}
           <Route

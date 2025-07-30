@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { auth } from '../firebase/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
@@ -242,6 +242,9 @@ const Dashboard = ({ cart, setCart }) => {
             </div>
           </div>
         </div>
+      </div>
+      <div className="text-center py-2 text-xs text-gray-500">
+        <Link to="/terms" className="hover:underline">Terms & Conditions</Link>
       </div>
     </div>
   );
