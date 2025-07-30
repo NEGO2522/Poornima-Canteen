@@ -5,10 +5,9 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
 import { getMenuSections, getMenuItemsBySection } from '../firebase/canteenService';
 
-const Dashboard = () => {
+const Dashboard = ({ cart, setCart }) => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('breakfast');
-  const [cart, setCart] = useState([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [sections, setSections] = useState([]);
@@ -54,7 +53,25 @@ const Dashboard = () => {
   };
 
   const addToCart = (item) => {
-    setCart([...cart, item]);
+    // Check if item already exists in cart
+    const existingItemIndex = cart.findIndex(cartItem => 
+      cartItem.id === item.id && cartItem.name === item.name
+    );
+    
+    if (existingItemIndex >= 0) {
+      // If item exists, update its quantity
+      const updatedCart = [...cart];
+      updatedCart[existingItemIndex] = {
+        ...updatedCart[existingItemIndex],
+        quantity: (updatedCart[existingItemIndex].quantity || 1) + 1
+      };
+      setCart(updatedCart);
+    } else {
+      // If item doesn't exist, add it with quantity 1
+      setCart([...cart, { ...item, quantity: 1 }]);
+    }
+    
+    toast.success(`${item.name} added to cart`);
   };
 
   // Load menu items when active section changes

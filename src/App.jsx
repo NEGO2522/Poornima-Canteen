@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './components/Landing';
 import Login from './auth/Login';
 import Dashboard from './components/Dashboard';
+import Cart from './components/Cart';
 import { auth } from './firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ToastContainer } from 'react-toastify';
@@ -36,6 +37,21 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
+  const [cart, setCart] = useState(() => {
+    // Load cart from localStorage on initial render
+    const savedCart = localStorage.getItem('canteenCart');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      localStorage.setItem('canteenCart', JSON.stringify(cart));
+    } else {
+      localStorage.removeItem('canteenCart');
+    }
+  }, [cart]);
+
   // Initialize canteen data when the app loads
   useEffect(() => {
     initializeCanteenData().catch(console.error);
@@ -54,11 +70,19 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <Dashboard cart={cart} setCart={setCart} />
               </ProtectedRoute>
             }
           />
-<Route
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart cart={cart} setCart={setCart} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/menu"
             element={
               <ProtectedRoute>
