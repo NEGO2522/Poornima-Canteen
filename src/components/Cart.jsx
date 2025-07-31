@@ -40,7 +40,12 @@ const Cart = ({ cart, setCart }) => {
     if (newQuantity < 1) return;
     
     const newCart = [...cart];
-    newCart[index].quantity = newQuantity;
+    // Ensure we have a valid quantity (default to 1 if undefined)
+    const currentQty = newCart[index].quantity || 1;
+    // Calculate the difference to add/subtract
+    const diff = newQuantity - currentQty;
+    // Update with the exact new quantity
+    newCart[index].quantity = Math.max(1, newQuantity);
     setCart(newCart);
   };
 

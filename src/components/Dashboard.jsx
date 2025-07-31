@@ -52,26 +52,26 @@ const Dashboard = ({ cart, setCart }) => {
     }
   };
 
-  const addToCart = (item, quantity = 1) => {
+  const addToCart = (item, newQuantity) => {
     // Check if item already exists in cart
     const existingItemIndex = cart.findIndex(cartItem => 
       cartItem.id === item.id && cartItem.name === item.name
     );
     
     if (existingItemIndex >= 0) {
-      // If item exists, update its quantity
+      // If item exists, update its quantity to the exact new quantity
       const updatedCart = [...cart];
       updatedCart[existingItemIndex] = {
         ...updatedCart[existingItemIndex],
-        quantity: (updatedCart[existingItemIndex].quantity || 1) + quantity
+        quantity: newQuantity
       };
       setCart(updatedCart);
     } else {
-      // If item doesn't exist, add it with the specified quantity (minimum 1)
-      setCart([...cart, { ...item, quantity: Math.max(1, quantity) }]);
+      // If item doesn't exist, add it with quantity 1
+      setCart([...cart, { ...item, quantity: 1 }]);
     }
     
-    toast.success(`${quantity} ${item.name} added to cart`);
+    toast.success(`Item added to cart`);
   };
 
   const updateCartQuantity = (item, newQuantity) => {
@@ -281,12 +281,15 @@ const Dashboard = ({ cart, setCart }) => {
                           onClick={(e) => {
                             e.stopPropagation();
                             const currentQty = getItemQuantity(item);
-                            addToCart(item, currentQty + 1);
+                            // Only add to cart if not already in cart
+                            if (currentQty === 0) {
+                              addToCart(item, 1);
+                            }
                             navigate('/cart');
                           }}
                           className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors whitespace-nowrap"
                         >
-                          Buy Now
+                          {getItemQuantity(item) > 0 ? 'View Cart' : 'Buy Now'}
                         </button>
                       </div>
                     </div>
