@@ -3,12 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { auth, actionCodeSettings, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, googleProvider, signInWithPopup } from '../firebase/firebase';
 import { onAuthStateChanged, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { FcGoogle } from 'react-icons/fc';
+import { FaUser, FaUserTie } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [isEmailSent, setIsEmailSent] = useState(false);
+  const [activeTab, setActiveTab] = useState('user'); // 'user' or 'owner'
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from || '/';
@@ -88,62 +90,94 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white">
-      {/* Hero Section - Matching Landing page */}
       <div className="relative h-screen flex items-center justify-center overflow-hidden">
-        {/* Background with blur - Matching Landing page */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80"></div>
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80')] bg-cover bg-center opacity-30"></div>
         </div>
 
-        {/* Content */}
         <div className="relative z-10 text-center px-6 max-w-md mx-auto w-full">
-          
-          {/* Login Card */}
           <div className="bg-black/50 backdrop-blur-md p-8 rounded-xl max-w-md mx-auto border border-white/10 shadow-2xl">
-            <h2 className="text-3xl font-bold mb-8 text-yellow-400">Connect with Us</h2>
+            <h2 className="text-3xl font-bold mb-8 text-yellow-400">Welcome Back!</h2>
+            
+            {/* Login Tabs */}
+            <div className="flex mb-8 border-b border-gray-700">
+              <button
+                onClick={() => setActiveTab('user')}
+                className={`flex-1 py-3 font-medium ${activeTab === 'user' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
+              >
+                <FaUser className="inline-block mr-2" /> User Login
+              </button>
+              <button
+                onClick={() => setActiveTab('owner')}
+                className={`flex-1 py-3 font-medium ${activeTab === 'owner' ? 'text-yellow-400 border-b-2 border-yellow-400' : 'text-gray-400 hover:text-white'}`}
+              >
+                <FaUserTie className="inline-block mr-2" /> Owner Login
+              </button>
+            </div>
             
             {!isEmailSent ? (
               <>
-                <form onSubmit={handleEmailLogin} className="space-y-6">
-                  <div>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-lg transition-all duration-200"
-                      required
-                    />
-                  </div>
-                  
-                  <button
-                    type="submit"
-                    className="w-full py-4 px-6 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-xl transition-all duration-200 transform hover:scale-105 text-lg"
-                  >
-                    Send Sign-in Link
-                  </button>
-                </form>
-
-                <div className="mt-8">
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-white/20"></div>
+                {activeTab === 'user' ? (
+                  <div className="space-y-6">
+                    <button
+                      onClick={handleGoogleSignIn}
+                      className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white/5 border-2 border-white/20 rounded-xl hover:bg-white/10 transition-all duration-200"
+                    >
+                      <FcGoogle className="text-2xl" />
+                      <span className="font-medium">Continue with Google</span>
+                    </button>
+                    
+                    <div className="relative mt-8">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-white/20"></div>
+                      </div>
+                      <div className="relative flex justify-center">
+                        <span className="px-4 bg-black/50 text-gray-300 text-sm">or</span>
+                      </div>
                     </div>
-                    <div className="relative flex justify-center">
-                      <span className="px-4 bg-transparent text-gray-300 text-sm">or continue with</span>
+                    
+                    <div className="text-gray-400 text-sm text-center mt-6">
+                      Continue as <button 
+                        onClick={() => setActiveTab('owner')} 
+                        className="text-yellow-400 hover:text-yellow-300 font-medium"
+                      >
+                        Canteen Owner
+                      </button>
                     </div>
                   </div>
-
-                  <button
-                    onClick={handleGoogleSignIn}
-                    className="w-full mt-6 flex items-center justify-center gap-3 py-3 px-6 border-2 border-white/20 rounded-xl hover:bg-white/5 transition-all duration-200"
-                  >
-                    <FcGoogle className="text-2xl" />
-                    <span className="font-medium">Sign in with Google</span>
-                  </button>
-                </div>
+                ) : (
+                  <form onSubmit={handleEmailLogin} className="space-y-6">
+                    <div>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="Enter your owner email"
+                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-lg transition-all duration-200"
+                        required
+                      />
+                    </div>
+                    
+                    <button
+                      type="submit"
+                      className="w-full py-4 px-6 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-xl transition-all duration-200 transform hover:scale-105 text-lg"
+                    >
+                      Send Owner Sign-in Link
+                    </button>
+                    
+                    <div className="text-center mt-4">
+                      <button 
+                        type="button"
+                        onClick={() => setActiveTab('user')} 
+                        className="text-yellow-400 hover:text-yellow-300 text-sm font-medium"
+                      >
+                        ← Back to User Login
+                      </button>
+                    </div>
+                  </form>
+                )}
               </>
             ) : (
               <div className="text-center py-8">
@@ -153,7 +187,9 @@ const Login = () => {
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-3">Check your email</h3>
-                <p className="text-gray-300 mb-8 text-lg">We've sent a sign-in link to <span className="text-white font-medium">{email}</span></p>
+                <p className="text-gray-300 mb-8 text-lg">
+                  We've sent a {activeTab === 'owner' ? 'owner ' : ''}sign-in link to <span className="text-white font-medium">{email}</span>
+                </p>
                 <button
                   onClick={() => {
                     setIsEmailSent(false);
@@ -161,7 +197,7 @@ const Login = () => {
                   }}
                   className="text-yellow-400 hover:text-yellow-300 text-lg font-medium transition-colors"
                 >
-                  Back to sign in
+                  Back to {activeTab === 'owner' ? 'owner login' : 'sign in'}
                 </button>
               </div>
             )}
