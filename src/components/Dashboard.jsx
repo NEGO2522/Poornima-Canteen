@@ -160,6 +160,7 @@ const Dashboard = ({ cart, setCart }) => {
                   </span>
                 )}
               </button>
+
               <button 
                 onClick={handleSignOut}
                 className="hidden sm:inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
@@ -281,10 +282,11 @@ const Dashboard = ({ cart, setCart }) => {
                             e.stopPropagation();
                             const currentQty = getItemQuantity(item);
                             addToCart(item, currentQty + 1);
+                            navigate('/cart');
                           }}
                           className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors whitespace-nowrap"
                         >
-                          Add to Cart
+                          Buy Now
                         </button>
                       </div>
                     </div>

@@ -224,7 +224,7 @@ const Cart = ({ cart, setCart }) => {
             onClick={() => navigate('/dashboard')}
             className="px-6 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors"
           >
-            Continue Shopping
+            Continue to Explore
           </button>
           <button
             onClick={handleCheckout}
