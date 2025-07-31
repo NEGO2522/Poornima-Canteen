@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Landing from './components/Landing';
 import Login from './auth/Login';
 import Dashboard from './components/Dashboard';
@@ -15,26 +15,39 @@ import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { initializeCanteenData } from './firebase/canteenService';
 
-// Protected Route component
-const ProtectedRoute = ({ children }) => {
+// Protected Route component with role-based access
+const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+  const location = useLocation();
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
+  // Check user role from localStorage
+  const userRole = localStorage.getItem('userRole');
+  
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
+      </div>
+    );
   }
 
+  // If no user is logged in, redirect to login with the current location
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // If user doesn't have the required role, redirect to appropriate dashboard
+  if (requiredRole === 'owner' && userRole !== 'owner') {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;
@@ -66,6 +79,7 @@ function App() {
       <div className="App">
         <ToastContainer position="top-right" autoClose={3000} />
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/terms" element={<TermsConditions />} />
@@ -73,11 +87,11 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           
-          {/* Protected Routes */}
+          {/* Protected User Routes */}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="user">
                 <Dashboard cart={cart} setCart={setCart} />
               </ProtectedRoute>
             }
@@ -85,7 +99,7 @@ function App() {
           <Route
             path="/cart"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="user">
                 <Cart cart={cart} setCart={setCart} />
               </ProtectedRoute>
             }
@@ -93,11 +107,24 @@ function App() {
           <Route
             path="/menu"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requiredRole="user">
                 <div>Menu Page - Protected Content</div>
               </ProtectedRoute>
             }
           />
+          
+          {/* Protected Owner Routes */}
+          <Route
+            path="/owner/dashboard"
+            element={
+              <ProtectedRoute requiredRole="owner">
+                <div>Owner Dashboard - Protected Content</div>
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Catch-all route for unauthorized access */}
+          <Route path="*" element={<Navigate to="/" replace />} />
           <Route
             path="/"
             element={

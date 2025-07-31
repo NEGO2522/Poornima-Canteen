@@ -62,7 +62,7 @@ const Landing = () => {
               onClick={() => handleButtonClick('menu')}
               className="px-8 py-4 border-2 border-yellow-500 text-yellow-500 hover:bg-yellow-500/10 font-bold rounded-full transform transition-all duration-300 hover:scale-105"
             >
-              View Menu
+              Explore Food Options
             </button>
           </div>
         </div>
