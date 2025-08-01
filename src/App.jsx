@@ -4,6 +4,7 @@ import Landing from './components/Landing';
 import Login from './auth/Login';
 import UserDashboard from './components/UserDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
+import ManagementPage from './components/ManagementPage';
 import Cart from './components/Cart';
 import TermsConditions from './components/Terms_Conditions';
 import CancellationRefundPolicy from './components/CancellationRefund_Policy';
@@ -47,6 +48,11 @@ const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
 
   // Check if user is owner based on email
   const isOwner = user.email === OWNER_EMAIL;
+  
+  // If route requires owner but user is not owner, redirect to home
+  if (requiredRole === 'owner' && !isOwner) {
+    return <Navigate to="/" replace />;
+  }
   
   // If user is trying to access owner dashboard but is not an owner
   if (requiredRole === 'owner' && !isOwner) {
@@ -122,6 +128,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="owner">
                 <div>Owner Dashboard - Protected Content</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manage-menu"
+            element={
+              <ProtectedRoute requiredRole="owner">
+                <ManagementPage />
               </ProtectedRoute>
             }
           />

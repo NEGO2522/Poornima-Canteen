@@ -3,8 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { auth } from '../firebase/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
-import { getMenuSections, getMenuItemsBySection, deleteMenuItem } from '../firebase/canteenService';
-import { FaTrash } from 'react-icons/fa';
+import { getMenuSections, getMenuItemsBySection } from '../firebase/canteenService';
 
 const OwnerDashboard = ({ cart, setCart }) => {
   const navigate = useNavigate();
@@ -23,12 +22,22 @@ const OwnerDashboard = ({ cart, setCart }) => {
         setUser(currentUser);
         try {
           const sectionsData = await getMenuSections();
-          setSections(sectionsData);
+          // Convert sectionsData object to array of sections
+          const sectionsArray = sectionsData ? Object.entries(sectionsData).map(([id, section]) => ({
+            id,
+            ...section
+          })) : [];
+          setSections(sectionsArray);
           
           const itemsData = await getMenuItemsBySection(activeSection);
+          // Convert itemsData object to array of items
+          const itemsArray = itemsData ? Object.entries(itemsData).map(([id, item]) => ({
+            id,
+            ...item
+          })) : [];
           setMenuItems(prev => ({
             ...prev,
-            [activeSection]: itemsData || []
+            [activeSection]: itemsArray
           }));
         } catch (error) {
           console.error('Error loading menu data:', error);
@@ -94,23 +103,6 @@ const OwnerDashboard = ({ cart, setCart }) => {
     return cartItem ? cartItem.quantity : 0;
   };
 
-  const handleDeleteItem = async (e, itemId) => {
-    e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this item?')) {
-      try {
-        await deleteMenuItem(activeSection, itemId);
-        setMenuItems(prev => ({
-          ...prev,
-          [activeSection]: prev[activeSection].filter(item => item.id !== itemId)
-        }));
-        toast.success('Item deleted successfully');
-      } catch (error) {
-        console.error('Error deleting item:', error);
-        toast.error('Failed to delete item');
-      }
-    }
-  };
-
   useEffect(() => {
     const loadMenuItems = async () => {
       if (!activeSection) return;
@@ -118,9 +110,15 @@ const OwnerDashboard = ({ cart, setCart }) => {
       
       try {
         const itemsData = await getMenuItemsBySection(activeSection);
+        // Convert Firebase object to array of items with IDs
+        const itemsArray = itemsData ? Object.entries(itemsData).map(([id, item]) => ({
+          id,
+          ...item
+        })) : [];
+        
         setMenuItems(prev => ({
           ...prev,
-          [activeSection]: itemsData || []
+          [activeSection]: itemsArray
         }));
       } catch (error) {
         console.error('Error loading menu items:', error);
@@ -133,11 +131,13 @@ const OwnerDashboard = ({ cart, setCart }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading menu...</p>
-        </div>
+      <div className="min-h-screen bg-gray-900 text-white">
+        <nav className="bg-gray-800 p-4">
+          <div className="container mx-auto flex justify-between items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-600"></div>
+            <p className="text-gray-300">Loading menu...</p>
+          </div>
+        </nav>
       </div>
     );
   }
@@ -147,19 +147,33 @@ const OwnerDashboard = ({ cart, setCart }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-gray-800">
       {/* Header */}
-      <header className="bg-white shadow-sm fixed w-full z-10">
-        <div className="max-w-7xl mx-auto px-8 sm:px-10 lg:px-12">
-          <div className="flex justify-between h-24 items-center">
-            <h1 
-              className="text-2xl font-bold text-yellow-600 cursor-pointer hover:text-yellow-700 transition-colors"
-              onClick={() => navigate('/')}
-            >
-              Poornima Canteen (Owner)
-            </h1>
-            <div className="flex items-center space-x-4">
+      <header className={`fixed w-full z-30 transition-all duration-300 ${isMenuOpen ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-white shadow-sm'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16 items-center">
+            <div className="flex-shrink-0 flex items-center">
+              <h1 
+                className="text-xl md:text-2xl font-bold text-yellow-600 cursor-pointer hover:text-yellow-700 transition-colors"
+                onClick={() => navigate('/')}
+              >
+                Poornima Canteen (Owner)
+              </h1>
+            </div>
+            <div className="hidden md:flex md:items-center md:space-x-4">
+              <button
+                onClick={() => navigate('/manage-menu')}
+                className="inline-flex items-center px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-gray-900 rounded-lg font-medium transition-colors text-sm md:text-base"
+              >
+                Manage Menu
+              </button>
+              <button 
+                onClick={handleSignOut}
+                className="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm md:text-base"
+              >
+                Sign Out
+              </button>
               <button 
                 onClick={() => navigate('/cart')}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors relative"
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors relative ml-2"
               >
                 <span className="text-gray-700">🛒</span>
                 {cart.length > 0 && (
@@ -168,19 +182,30 @@ const OwnerDashboard = ({ cart, setCart }) => {
                   </span>
                 )}
               </button>
-
-              <button 
-                onClick={handleSignOut}
-                className="hidden sm:inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+            </div>
+            <div className="md:hidden flex items-center">
+              <button
+                onClick={() => navigate('/cart')}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors relative mr-2"
               >
-                Sign Out
+                <span className="text-gray-700">🛒</span>
+                {cart.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-yellow-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {cart.length}
+                  </span>
+                )}
               </button>
-              <button 
-                className="md:hidden p-2 text-gray-600 hover:text-gray-900"
+              <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="text-gray-600 hover:text-yellow-600 focus:outline-none p-2"
+                aria-label="Toggle menu"
               >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  {isMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                  )}
                 </svg>
               </button>
             </div>
@@ -189,13 +214,30 @@ const OwnerDashboard = ({ cart, setCart }) => {
       </header>
 
       {/* Mobile Menu */}
-      {isMenuOpen && (
-        <div className="fixed top-16 left-0 right-0 bg-white shadow-lg z-20 p-4 md:hidden border-t border-gray-200">
-          <div className="grid grid-cols-2 gap-2">
+      <div className={`fixed inset-0 z-20 transform ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out md:hidden`}>
+        <div 
+          className={`fixed inset-0 bg-white/30 backdrop-blur-sm transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} 
+          onClick={() => setIsMenuOpen(false)}
+        ></div>
+        <div className="fixed top-0 left-0 bottom-0 w-64 bg-white shadow-xl overflow-y-auto">
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800">Menu</h2>
+              <button 
+                onClick={() => setIsMenuOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div className="p-4 space-y-2">
             {sections.map((section) => (
               <button
                 key={section.id}
-                className={`px-4 py-3 rounded-lg text-left text-sm font-medium ${
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium ${
                   activeSection === section.id 
                     ? 'bg-yellow-100 text-yellow-800' 
                     : 'text-gray-700 hover:bg-gray-50'
@@ -208,11 +250,20 @@ const OwnerDashboard = ({ cart, setCart }) => {
                 {section.name}
               </button>
             ))}
+            <button
+              onClick={() => {
+                navigate('/manage-menu');
+                setIsMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+            >
+              Manage Menu
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
-      <div className="pt-28 pb-16 px-8 sm:px-10 lg:px-12 max-w-7xl mx-auto">
+      <div className="pt-16 md:pt-24 pb-16 px-4 sm:px-6 md:px-8 lg:px-12 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row gap-8">
           {/* Desktop Sidebar */}
           <div className="hidden md:block w-60 flex-shrink-0">
@@ -242,81 +293,76 @@ const OwnerDashboard = ({ cart, setCart }) => {
               <h2 className="text-2xl font-semibold mb-8 text-gray-800 border-b pb-3">
                 {sections.find(s => s.id === activeSection)?.name} Menu (Owner View)
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {currentItems.length === 0 ? (
                   <div className="col-span-full text-center py-10 text-gray-500">
                     No items found in this category.
                   </div>
                 ) : (
-                  currentItems.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-base font-medium text-gray-900">{item.name}</h3>
-                        <div className="flex items-center">
-                          <span className="text-yellow-600 font-medium mr-2">₹{item.price?.toFixed(2)}</span>
-                          <button 
-                            onClick={(e) => handleDeleteItem(e, item.id)}
-                            className="text-red-500 hover:text-red-700 ml-2"
-                            title="Delete item"
-                          >
-                            <FaTrash className="w-4 h-4" />
-                          </button>
+                  currentItems.map((item, index) => {
+                    // Create a truly unique key by combining section, item ID, and index
+                    const uniqueKey = `${activeSection}-${item.id || 'no-id'}-${index}`;
+                    return (
+                      <div 
+                        key={uniqueKey}
+                        className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-base font-medium text-gray-900">{item.name}</h3>
+                          <span className="text-yellow-600 font-medium">₹{item.price?.toFixed(2)}</span>
                         </div>
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center border border-gray-300 rounded-md">
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex items-center border border-gray-300 rounded-md">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const currentQty = getItemQuantity(item);
+                                if (currentQty > 0) {
+                                  updateCartQuantity(item, currentQty - 1);
+                                }
+                              }}
+                              className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-l-md transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-medium">
+                              {getItemQuantity(item) || 0}
+                            </span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const currentQty = getItemQuantity(item);
+                                addToCart(item, currentQty + 1);
+                              }}
+                              className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-r-md transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               const currentQty = getItemQuantity(item);
-                              if (currentQty > 0) {
-                                updateCartQuantity(item, currentQty - 1);
+                              if (currentQty === 0) {
+                                addToCart(item, 1);
                               }
+                              navigate('/cart');
                             }}
-                            className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-l-md transition-colors"
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors whitespace-nowrap"
                           >
-                            -
-                          </button>
-                          <span className="w-8 text-center font-medium">
-                            {getItemQuantity(item) || 0}
-                          </span>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const currentQty = getItemQuantity(item);
-                              addToCart(item, currentQty + 1);
-                            }}
-                            className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-r-md transition-colors"
-                          >
-                            +
+                            {getItemQuantity(item) > 0 ? 'View Cart' : 'Buy Now'}
                           </button>
                         </div>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const currentQty = getItemQuantity(item);
-                            if (currentQty === 0) {
-                              addToCart(item, 1);
-                            }
-                            navigate('/cart');
-                          }}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors whitespace-nowrap"
-                        >
-                          {getItemQuantity(item) > 0 ? 'View Cart' : 'Buy Now'}
-                        </button>
                       </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div className="text-center py-2 text-xs text-gray-500 space-x-4">
+      <div className="text-center py-2 px-4 text-xs text-gray-500 space-y-1 sm:space-y-0 sm:space-x-4">
         <Link to="/terms" className="hover:underline">Terms & Conditions</Link>
         <span>•</span>
         <Link to="/cancellation-refund-policy" className="hover:underline">Cancellation & Refund Policy</Link>

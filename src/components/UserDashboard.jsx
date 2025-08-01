@@ -22,12 +22,22 @@ const UserDashboard = ({ cart, setCart }) => {
         setUser(currentUser);
         try {
           const sectionsData = await getMenuSections();
-          setSections(sectionsData);
+          // Convert sectionsData object to array of sections
+          const sectionsArray = sectionsData ? Object.entries(sectionsData).map(([id, section]) => ({
+            id,
+            ...section
+          })) : [];
+          setSections(sectionsArray);
           
           const itemsData = await getMenuItemsBySection(activeSection);
+          // Convert itemsData object to array of items
+          const itemsArray = itemsData ? Object.entries(itemsData).map(([id, item]) => ({
+            id,
+            ...item
+          })) : [];
           setMenuItems(prev => ({
             ...prev,
-            [activeSection]: itemsData || []
+            [activeSection]: itemsArray
           }));
         } catch (error) {
           console.error('Error loading menu data:', error);
@@ -115,16 +125,14 @@ const UserDashboard = ({ cart, setCart }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading menu...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500"></div>
       </div>
     );
   }
 
-  const currentItems = menuItems[activeSection] || [];
+  // Derive currentItems from menuItems and activeSection
+  const currentItems = Array.isArray(menuItems[activeSection]) ? menuItems[activeSection] : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-gray-800">
@@ -230,59 +238,63 @@ const UserDashboard = ({ cart, setCart }) => {
                     No items found in this category.
                   </div>
                 ) : (
-                  currentItems.map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-base font-medium text-gray-900">{item.name}</h3>
-                        <span className="text-yellow-600 font-medium">₹{item.price?.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="flex items-center border border-gray-300 rounded-md">
+                  currentItems.map((item, index) => {
+                    // Create a truly unique key by combining section, item ID, and index
+                    const uniqueKey = `${activeSection}-${item.id || 'no-id'}-${index}`;
+                    return (
+                      <div 
+                        key={uniqueKey}
+                        className="bg-white rounded-lg border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <h3 className="text-base font-medium text-gray-900">{item.name}</h3>
+                          <span className="text-yellow-600 font-medium">₹{item.price?.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex items-center border border-gray-300 rounded-md">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const currentQty = getItemQuantity(item);
+                                if (currentQty > 0) {
+                                  updateCartQuantity(item, currentQty - 1);
+                                }
+                              }}
+                              className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-l-md transition-colors"
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-medium">
+                              {getItemQuantity(item) || 0}
+                            </span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const currentQty = getItemQuantity(item);
+                                addToCart(item, currentQty + 1);
+                              }}
+                              className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-r-md transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               const currentQty = getItemQuantity(item);
-                              if (currentQty > 0) {
-                                updateCartQuantity(item, currentQty - 1);
+                              if (currentQty === 0) {
+                                addToCart(item, 1);
                               }
+                              navigate('/cart');
                             }}
-                            className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-l-md transition-colors"
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors whitespace-nowrap"
                           >
-                            -
-                          </button>
-                          <span className="w-8 text-center font-medium">
-                            {getItemQuantity(item) || 0}
-                          </span>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const currentQty = getItemQuantity(item);
-                              addToCart(item, currentQty + 1);
-                            }}
-                            className="text-gray-500 hover:bg-gray-100 px-3 py-1 rounded-r-md transition-colors"
-                          >
-                            +
+                            {getItemQuantity(item) > 0 ? 'View Cart' : 'Buy Now'}
                           </button>
                         </div>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const currentQty = getItemQuantity(item);
-                            if (currentQty === 0) {
-                              addToCart(item, 1);
-                            }
-                            navigate('/cart');
-                          }}
-                          className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm font-medium py-1.5 px-3 rounded-md transition-colors whitespace-nowrap"
-                        >
-                          {getItemQuantity(item) > 0 ? 'View Cart' : 'Buy Now'}
-                        </button>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
