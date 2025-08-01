@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../firebase/firebase';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { toast } from 'react-toastify';
 import { 
   getMenuSections, 
@@ -311,14 +313,18 @@ const ManagementPage = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <input
-                  type="text"
-                  value={newItem.description}
-                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select
+                  value={activeSection}
+                  onChange={(e) => setActiveSection(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                  placeholder="Enter description (optional)"
-                />
+                >
+                  {sections.map((section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="pt-2 flex justify-end space-x-3">
@@ -530,14 +536,18 @@ const ManagementPage = () => {
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <input
-                          type="text"
-                          value={newItem.description}
-                          onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select
+                          value={activeSection}
+                          onChange={(e) => setActiveSection(e.target.value)}
                           className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                          placeholder="Enter description (optional)"
-                        />
+                        >
+                          {sections.map((section) => (
+                            <option key={section.id} value={section.id}>
+                              {section.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     </div>
                     

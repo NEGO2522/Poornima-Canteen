@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import Landing from './components/Landing';
 import Login from './auth/Login';
 import UserDashboard from './components/UserDashboard';
-import OwnerDashboard from './components/OwnerDashboard';
 import ManagementPage from './components/ManagementPage';
 import Cart from './components/Cart';
 import TermsConditions from './components/Terms_Conditions';
@@ -23,7 +22,11 @@ const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const location = useLocation();
-  const OWNER_EMAIL = '2024btechaimlkshitij18489@poornima.edu.in';
+  const OWNER_EMAILS = [
+    '2024btechaimlkshitij18489@poornima.edu.in',
+    'rahulsinghi@poornima.edu.in',
+    '2024btechaimlmanish19029@poornima.edu.in'
+  ];
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -47,7 +50,7 @@ const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
   }
 
   // Check if user is owner based on email
-  const isOwner = user.email === OWNER_EMAIL;
+  const isOwner = OWNER_EMAILS.includes(user.email);
   
   // If route requires owner but user is not owner, redirect to home
   if (requiredRole === 'owner' && !isOwner) {
@@ -110,7 +113,7 @@ function App() {
             path="/owner-dashboard"
             element={
               <ProtectedRoute requiredRole="owner">
-                <OwnerDashboard cart={cart} setCart={setCart} />
+                <Navigate to="/manage-menu" replace />
               </ProtectedRoute>
             }
           />
