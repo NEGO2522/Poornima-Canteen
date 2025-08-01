@@ -32,6 +32,26 @@ const actionCodeSettings = {
   url: window.location.origin + '/login',
   // This must be true for email link sign-in
   handleCodeInApp: true,
+  // Additional recommended settings
+  dynamicLinkDomain: 'canteen-63ad4.firebaseapp.com',
+  // iOS settings (if you have an iOS app)
+  // iOS: {
+  //   bundleId: 'com.example.ios'
+  // },
+  // Android settings (if you have an Android app)
+  // android: {
+  //   packageName: 'com.example.android',
+  //   installApp: true,
+  //   minimumVersion: '12'
+  // },
+  // Additional query parameters for the redirect URL
+  // These will be available in the signInWithEmailLink callback
+  // via window.location.href
+  // For example, you can pass the continue URL
+  // and handle it in your app after sign-in
+  // queryParams: {
+  //   continueUrl: window.location.href
+  // }
 };
 
 // Export all Firebase services in a single export statement

@@ -3,9 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { auth } from '../firebase/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { toast } from 'react-toastify';
-import { getMenuSections, getMenuItemsBySection } from '../firebase/canteenService';
+import { getMenuSections, getMenuItemsBySection, deleteMenuItem } from '../firebase/canteenService';
+import { FaTrash } from 'react-icons/fa';
 
-const Dashboard = ({ cart, setCart }) => {
+const OwnerDashboard = ({ cart, setCart }) => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('breakfast');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,11 +22,9 @@ const Dashboard = ({ cart, setCart }) => {
       } else {
         setUser(currentUser);
         try {
-          // Fetch menu sections
           const sectionsData = await getMenuSections();
           setSections(sectionsData);
           
-          // Fetch menu items for the active section
           const itemsData = await getMenuItemsBySection(activeSection);
           setMenuItems(prev => ({
             ...prev,
@@ -53,13 +52,11 @@ const Dashboard = ({ cart, setCart }) => {
   };
 
   const addToCart = (item, newQuantity) => {
-    // Check if item already exists in cart
     const existingItemIndex = cart.findIndex(cartItem => 
       cartItem.id === item.id && cartItem.name === item.name
     );
     
     if (existingItemIndex >= 0) {
-      // If item exists, update its quantity to the exact new quantity
       const updatedCart = [...cart];
       updatedCart[existingItemIndex] = {
         ...updatedCart[existingItemIndex],
@@ -67,7 +64,6 @@ const Dashboard = ({ cart, setCart }) => {
       };
       setCart(updatedCart);
     } else {
-      // If item doesn't exist, add it with quantity 1
       setCart([...cart, { ...item, quantity: 1 }]);
     }
     
@@ -98,12 +94,26 @@ const Dashboard = ({ cart, setCart }) => {
     return cartItem ? cartItem.quantity : 0;
   };
 
-  // Load menu items when active section changes
+  const handleDeleteItem = async (e, itemId) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this item?')) {
+      try {
+        await deleteMenuItem(activeSection, itemId);
+        setMenuItems(prev => ({
+          ...prev,
+          [activeSection]: prev[activeSection].filter(item => item.id !== itemId)
+        }));
+        toast.success('Item deleted successfully');
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        toast.error('Failed to delete item');
+      }
+    }
+  };
+
   useEffect(() => {
     const loadMenuItems = async () => {
       if (!activeSection) return;
-      
-      // If we already have the items for this section, don't fetch again
       if (menuItems[activeSection]) return;
       
       try {
@@ -121,7 +131,6 @@ const Dashboard = ({ cart, setCart }) => {
     loadMenuItems();
   }, [activeSection, menuItems]);
 
-  // Show loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -133,7 +142,6 @@ const Dashboard = ({ cart, setCart }) => {
     );
   }
 
-  // Get current section items or empty array if not loaded yet
   const currentItems = menuItems[activeSection] || [];
 
   return (
@@ -146,7 +154,7 @@ const Dashboard = ({ cart, setCart }) => {
               className="text-2xl font-bold text-yellow-600 cursor-pointer hover:text-yellow-700 transition-colors"
               onClick={() => navigate('/')}
             >
-              Poornima Canteen
+              Poornima Canteen (Owner)
             </h1>
             <div className="flex items-center space-x-4">
               <button 
@@ -232,7 +240,7 @@ const Dashboard = ({ cart, setCart }) => {
           <div className="flex-1">
             <div className="bg-white rounded-lg shadow-sm p-8 border border-gray-200">
               <h2 className="text-2xl font-semibold mb-8 text-gray-800 border-b pb-3">
-                {sections.find(s => s.id === activeSection)?.name} Menu
+                {sections.find(s => s.id === activeSection)?.name} Menu (Owner View)
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {currentItems.length === 0 ? (
@@ -247,7 +255,16 @@ const Dashboard = ({ cart, setCart }) => {
                     >
                       <div className="flex justify-between items-center mb-2">
                         <h3 className="text-base font-medium text-gray-900">{item.name}</h3>
-                        <span className="text-yellow-600 font-medium">₹{item.price?.toFixed(2)}</span>
+                        <div className="flex items-center">
+                          <span className="text-yellow-600 font-medium mr-2">₹{item.price?.toFixed(2)}</span>
+                          <button 
+                            onClick={(e) => handleDeleteItem(e, item.id)}
+                            className="text-red-500 hover:text-red-700 ml-2"
+                            title="Delete item"
+                          >
+                            <FaTrash className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center border border-gray-300 rounded-md">
@@ -277,11 +294,10 @@ const Dashboard = ({ cart, setCart }) => {
                             +
                           </button>
                         </div>
-                        <button
+                        <button 
                           onClick={(e) => {
                             e.stopPropagation();
                             const currentQty = getItemQuantity(item);
-                            // Only add to cart if not already in cart
                             if (currentQty === 0) {
                               addToCart(item, 1);
                             }
@@ -313,4 +329,4 @@ const Dashboard = ({ cart, setCart }) => {
   );
 };
 
-export default Dashboard;
+export default OwnerDashboard;

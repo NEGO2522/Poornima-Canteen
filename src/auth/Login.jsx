@@ -11,11 +11,12 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [isEmailSent, setIsEmailSent] = useState(false);
   const [activeTab, setActiveTab] = useState('user'); // 'user' or 'owner'
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from || '/';
 
-  // Set up auth state persistence
+  // Set up auth state persistence and handle email link sign-in
   useEffect(() => {
     setPersistence(auth, browserLocalPersistence)
       .catch((error) => {
@@ -25,66 +26,200 @@ const Login = () => {
     // Check if user is already logged in
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        const from = location.state?.from?.pathname || '/dashboard';
+        const OWNER_EMAIL = '2024btechaimlkshitij18489@poornima.edu.in';
+        const isOwner = user.email === OWNER_EMAIL;
+        const defaultPath = isOwner ? '/owner-dashboard' : '/dashboard';
+        const from = location.state?.from?.pathname || defaultPath;
         navigate(from, { replace: true });
       }
     });
 
     // Check if we're handling a sign-in link
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      let email = window.localStorage.getItem('emailForSignIn');
-      if (!email) {
-        email = window.prompt('Please provide your email for confirmation');
-      }
-      signInWithEmailLink(auth, email, window.location.href)
-        .then((result) => {
-          window.localStorage.removeItem('emailForSignIn');
-          const from = location.state?.from?.pathname || '/';
-          navigate(from, { replace: true });
-        })
-        .catch((error) => {
-          console.error('Error signing in with email link', error);
-        });
-    }
+    const handleEmailLinkSignIn = async () => {
+      // Check if we're handling a sign-in link
+      if (isSignInWithEmailLink(auth, window.location.href)) {
+        try {
+          // Get the email from localStorage or prompt the user for it
+          let email = window.localStorage.getItem('emailForSignIn');
+          
+          // If email is not in localStorage, check URL parameters or prompt the user
+          if (!email) {
+            // Try to get email from URL parameters if it exists
+            const urlParams = new URLSearchParams(window.location.search);
+            email = urlParams.get('email') || window.prompt('Please provide your email for confirmation');
+            
+            if (!email) {
+              toast.error('Email is required to complete sign in');
+              return;
+            }
+          }
 
+          // Get the full URL for sign-in
+          const fullUrl = window.location.href;
+          
+          // Clear the URL to prevent re-triggering this effect
+          // But keep the path and search params for the redirect
+          const cleanPath = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanPath);
+          
+          // Complete the sign-in process
+          const result = await signInWithEmailLink(auth, email, fullUrl);
+          
+          // Clear the email from localStorage
+          window.localStorage.removeItem('emailForSignIn');
+          
+          // Redirect to the appropriate dashboard based on user role
+          const OWNER_EMAIL = '2024btechaimlkshitij18489@poornima.edu.in';
+          const isOwner = result.user.email === OWNER_EMAIL;
+          const defaultPath = isOwner ? '/owner-dashboard' : '/dashboard';
+          const from = location.state?.from?.pathname || defaultPath;
+          navigate(from, { replace: true });
+          
+          toast.success(`Successfully signed in as ${isOwner ? 'owner' : 'user'}!`);
+          
+        } catch (error) {
+          console.error('Error signing in with email link', error);
+          let errorMessage = 'Failed to sign in with email link';
+          
+          if (error.code === 'auth/invalid-action-code') {
+            errorMessage = 'The sign-in link is invalid or has expired. Please request a new one.';
+          } else if (error.code === 'auth/expired-action-code') {
+            errorMessage = 'The sign-in link has expired. Please request a new one.';
+          } else if (error.code === 'auth/user-disabled') {
+            errorMessage = 'This account has been disabled. Please contact support.';
+          } else if (error.code === 'auth/user-not-found') {
+            errorMessage = 'No account found with this email. Please sign up first.';
+          }
+          
+          toast.error(errorMessage);
+          
+          // Redirect to login page if there's an error
+          navigate('/login', { replace: true });
+        }
+      }
+    };
+
+    handleEmailLinkSignIn();
+    
     return () => unsubscribe();
   }, [navigate, location]);
 
+  const handleGoogleSignIn = async (userType = 'user') => {
+    try {
+      setIsLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      
+      // Check if the user is the owner
+      const OWNER_EMAIL = '2024btechaimlkshitij18489@poornima.edu.in';
+      const isOwner = user.email === OWNER_EMAIL;
+      
+      // If user is trying to sign in as owner but email doesn't match
+      if (userType === 'owner' && !isOwner) {
+        await auth.signOut();
+        throw new Error('Only authorized owners can access this section');
+      }
+      
+      // Redirect based on actual user type, not the login button they clicked
+      // Only redirect to owner dashboard if they are the owner
+      if (isOwner) {
+        navigate('/owner-dashboard', { replace: true });
+        toast.success('Successfully signed in as owner!');
+      } else {
+        navigate('/dashboard', { replace: true });
+        toast.success('Successfully signed in!');
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      let errorMessage = 'Failed to sign in with Google';
+      
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        errorMessage = 'An account already exists with the same email but different sign-in credentials';
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = 'Sign in popup was closed before completion';
+      } else if (error.message.includes('Only authorized owners')) {
+        errorMessage = 'Only authorized owners can access this section';
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleEmailLogin = async (e) => {
     e.preventDefault();
+    const OWNER_EMAIL = '2024btechaimlkshitij18489@poornima.edu.in';
+    
     if (!email) {
       toast.error('Please enter your email address');
       return;
     }
 
+    // Check if it's a valid email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    // Check if it's owner login and email doesn't match
+    if (activeTab === 'owner' && email !== OWNER_EMAIL) {
+      toast.error('Only authorized owners can access this section');
+      return;
+    }
+
     try {
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      // Clear any previous email from localStorage
+      window.localStorage.removeItem('emailForSignIn');
+      
+      // Create a complete sign-in URL with email parameter
+      const signInUrl = new URL(window.location.origin + '/login');
+      signInUrl.searchParams.append('email', email);
+      
+      // Prepare the action code settings with the complete URL
+      const settings = {
+        ...actionCodeSettings,
+        url: signInUrl.toString(),
+        handleCodeInApp: true
+      };
+      
+      // Send the sign-in link
+      await sendSignInLinkToEmail(auth, email, settings);
+      
+      // Save the email to localStorage for later use
       window.localStorage.setItem('emailForSignIn', email);
       setIsEmailSent(true);
-      toast.success('Sign-in link sent to your email!');
+      
+      toast.success('Sign-in link sent to your email! Please check your inbox and click the link to sign in.');
     } catch (error) {
       console.error('Error sending sign-in link:', error);
       let errorMessage = 'Failed to send sign-in link';
       
-      if (error.code === 'auth/invalid-email') {
-        errorMessage = 'Please enter a valid email address';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many requests. Please try again later.';
+      switch(error.code) {
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many requests. Please try again later.';
+          break;
+        case 'auth/unauthorized-domain':
+          errorMessage = 'This domain is not authorized. Please contact support.';
+          break;
+        case 'auth/operation-not-allowed':
+          errorMessage = 'Email/password accounts are not enabled.';
+          break;
+        case 'auth/quota-exceeded':
+          errorMessage = 'Daily email sign-in quota exceeded. Please try again tomorrow or use another sign-in method.';
+          break;
+        case 'auth/email-already-in-use':
+          errorMessage = 'This email is already in use. Please use a different email or sign in.';
+          break;
+        default:
+          errorMessage = error.message || 'An error occurred. Please try again.';
       }
       
       toast.error(errorMessage);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-      toast.success('Successfully signed in with Google!');
-      const redirectTo = from === '/login' ? '/dashboard' : from;
-      navigate(redirectTo, { replace: true });
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      toast.error('Failed to sign in with Google. Please try again.');
     }
   };
 
@@ -148,35 +283,40 @@ const Login = () => {
                     </div>
                   </div>
                 ) : (
-                  <form onSubmit={handleEmailLogin} className="space-y-6">
-                    <div>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Enter your owner email"
-                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-lg transition-all duration-200"
-                        required
-                      />
-                    </div>
-                    
-                    <button
-                      type="submit"
-                      className="w-full py-4 px-6 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-xl transition-all duration-200 transform hover:scale-105 text-lg"
-                    >
-                      Send Owner Sign-in Link
-                    </button>
+                  <div className="space-y-6">
+                    <form onSubmit={handleEmailLogin}>
+                      <div className="mb-4">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="Enter your owner email"
+                          className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-lg transition-all duration-200"
+                          required
+                          disabled={isLoading}
+                        />
+                      </div>
+                      
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full py-4 px-6 bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold rounded-xl transition-all duration-200 transform hover:scale-105 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isLoading ? 'Sending...' : 'Send Owner Sign-in Link'}
+                      </button>
+                    </form>
                     
                     <div className="text-center mt-4">
                       <button 
                         type="button"
                         onClick={() => setActiveTab('user')} 
-                        className="text-yellow-400 hover:text-yellow-300 text-sm font-medium"
+                        className="text-yellow-400 hover:text-yellow-300 text-sm font-medium disabled:opacity-50"
+                        disabled={isLoading}
                       >
                         ← Back to User Login
                       </button>
                     </div>
-                  </form>
+                  </div>
                 )}
               </>
             ) : (

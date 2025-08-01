@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Landing from './components/Landing';
 import Login from './auth/Login';
-import Dashboard from './components/Dashboard';
+import UserDashboard from './components/UserDashboard';
+import OwnerDashboard from './components/OwnerDashboard';
 import Cart from './components/Cart';
 import TermsConditions from './components/Terms_Conditions';
 import CancellationRefundPolicy from './components/CancellationRefund_Policy';
@@ -14,12 +15,14 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 import { initializeCanteenData } from './firebase/canteenService';
+import { toast } from 'react-toastify';
 
 // Protected Route component with role-based access
 const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
   const [user, setUser] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const location = useLocation();
+  const OWNER_EMAIL = '2024btechaimlkshitij18489@poornima.edu.in';
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -28,9 +31,6 @@ const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
     });
     return () => unsubscribe();
   }, []);
-
-  // Check user role from localStorage
-  const userRole = localStorage.getItem('userRole');
   
   if (loading) {
     return (
@@ -45,8 +45,12 @@ const ProtectedRoute = ({ children, requiredRole = 'user' }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // If user doesn't have the required role, redirect to appropriate dashboard
-  if (requiredRole === 'owner' && userRole !== 'owner') {
+  // Check if user is owner based on email
+  const isOwner = user.email === OWNER_EMAIL;
+  
+  // If user is trying to access owner dashboard but is not an owner
+  if (requiredRole === 'owner' && !isOwner) {
+    toast.error('You do not have permission to access this page');
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -92,7 +96,15 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute requiredRole="user">
-                <Dashboard cart={cart} setCart={setCart} />
+                <UserDashboard cart={cart} setCart={setCart} />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner-dashboard"
+            element={
+              <ProtectedRoute requiredRole="owner">
+                <OwnerDashboard cart={cart} setCart={setCart} />
               </ProtectedRoute>
             }
           />
@@ -103,16 +115,7 @@ function App() {
                 <Cart cart={cart} setCart={setCart} />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/menu"
-            element={
-              <ProtectedRoute requiredRole="user">
-                <div>Menu Page - Protected Content</div>
-              </ProtectedRoute>
-            }
-          />
-          
+          />     
           {/* Protected Owner Routes */}
           <Route
             path="/owner/dashboard"
